@@ -1,0 +1,92 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description": "VPC cloudformation template",
+    "Outputs": {
+        "LoadBalancerDNSName": {
+            "Description" : "ELB DNS Name",
+            "Value": { "Fn::GetAtt" : [ "MyWebServerELB", "DNSName" ] }
+        }
+    },
+    "Parameters": {
+        "Stage": {
+            "Type": "String",
+            "AllowedValues" : [ "CODE", "PROD" ],
+            "Default" : "CODE"
+        },
+        "CidrA": {
+            "Type": "String"
+        },
+        "CidrB": {
+            "Type": "String"
+        },
+        "CidrC": {
+            "Type": "String"
+        },
+        "SubnetA": {
+            "Type": "String"
+        },
+        "SubnetB": {
+            "Type": "String"
+        },
+        "SubnetC": {
+            "Type": "String"
+        },
+        "DefaultSecGroup": {
+            "Type": "String"
+        },
+        "AppPort": {
+            "Type": "Number"
+        },
+        "InstanceType": {
+            "Type": "String",
+            "Default": "m1.small"
+        },
+        "BackendELB": {
+            "Type": "String"
+        },
+        "BackendPort": {
+            "Type": "Number"
+        },
+    },
+    "Resources": {
+        "MyWebServerELB" : {
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "AvailabilityZones" :  { "Fn::GetAZs" : ""},
+            }
+        },
+        "MyWebServerSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Monkey",
+                "SecurityGroupIngress" : [
+                {
+                    "IpProtocol" : "tcp", 
+                    "FromPort" : { "Ref": "AppPort" },
+                    "ToPort" : { "Ref": "AppPort" },
+                    "SourceSecurityGroupOwnerId" : {"Fn::GetAtt" : ["MyWebServerELB", "SourceSecurityGroup.OwnerAlias"]},
+                    "SourceSecurityGroupName" : {"Fn::GetAtt" : ["MyWebServerELB", "SourceSecurityGroup.GroupName"]}
+
+                } ]
+            }
+        },
+        "MyWebServerLaunchConfig" : {
+            "Type" : "AWS::AutoScaling::LaunchConfiguration",
+            "Properties" : {
+                "ImageId" : "ami-6411e20d",
+                "SecurityGroups" : [ { "Ref" : "MyWebServerSecurityGroup" }, { "Ref": "DefaultSecGroup" } ],
+                "InstanceType" : { "Ref": "InstanceType" }
+            }
+        },
+        "MyWebServerGroup" : {
+            "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "Properties" : {
+                "AvailabilityZones" : { "Fn::GetAZs" : ""},
+                "LaunchConfigurationName" : { "Ref" : "MyWebServerLaunchConfig" },
+                "MinSize" : "1",
+                "MaxSize" : "3",
+                "LoadBalancerNames" : [ { "Ref" : "MyWebServerELB" } ]
+            }
+        }
+    }
+}

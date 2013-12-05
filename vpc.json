@@ -1,0 +1,350 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description": "VPC cloudformation template",
+    "Outputs": {
+        "NATAZ": {
+            "Description": "Availability Zone of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATDevice",
+                    "AvailabilityZone"
+                ]
+            }
+        },
+        "NATInstanceId": {
+            "Description": "InstanceId of the newly created EC2 instance",
+            "Value": {
+                "Ref": "NATDevice"
+            }
+        },
+        "NATPrivateDNS": {
+            "Description": "Private DNSName of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATDevice",
+                    "PrivateDnsName"
+                ]
+            }
+        },
+        "NATPrivateIP": {
+            "Description": "Private IP address of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATDevice",
+                    "PrivateIp"
+                ]
+            }
+        },
+        "NATPublicDNS": {
+            "Description": "Public DNSName of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATDevice",
+                    "PublicDnsName"
+                ]
+            }
+        },
+        "NATPublicIP": {
+            "Description": "Public IP address of the newly created EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATDevice",
+                    "PublicIp"
+                ]
+            }
+        },
+        "CidrPrivateA": {
+            "Description": "CidrPrivateA from new VPC",
+            "Value": { "Ref": "CidrPrivateA" }
+        },
+        "CidrPrivateB": {
+            "Description": "CidrPrivateB from new VPC",
+            "Value": { "Ref": "CidrPrivateB" }
+        },
+        "CidrPrivateC": {
+            "Description": "CidrPrivateC from new VPC",
+            "Value": { "Ref": "CidrPrivateC" }
+        },
+        "CidrPublicA": {
+            "Description": "CidrPublicA from new VPC",
+            "Value": { "Ref": "CidrPublicA" }
+        },
+        "CidrPublicB": {
+            "Description": "CidrPublicB from new VPC",
+            "Value": { "Ref": "CidrPublicB" }
+        },
+        "CidrPublicC": {
+            "Description": "CidrPublicC from new VPC",
+            "Value": { "Ref": "CidrPublicC" }
+        },
+        "CidrVPC": {
+            "Description": "CidrVPC from new VPC",
+            "Value": { "Ref": "CidrVPC" }
+        }
+    },
+    "Parameters": {
+        "CidrPrivateA": {
+            "Type": "String"
+        },
+        "CidrPrivateB": {
+            "Type": "String"
+        },
+        "CidrPrivateC": {
+            "Type": "String"
+        },
+        "CidrPublicA": {
+            "Type": "String"
+        },
+        "CidrPublicB": {
+            "Type": "String"
+        },
+        "CidrPublicC": {
+            "Type": "String"
+        },
+        "CidrVPC": {
+            "Type": "String"
+        },
+        "KeyName": {
+            "Default": "bootstrap",
+            "Description": "KeyPair to the instance",
+            "Type": "String"
+        },
+    },
+    "Resources": {
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway"
+        },
+        "NATDevice": {
+            "Properties": {
+                "ImageId": "ami-24506250",
+                "InstanceType": "t1.micro",
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "SourceDestCheck": false,
+                "SubnetId": {
+                    "Ref": "PublicA"
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        },
+        "NATIP": {
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {
+                    "Ref": "NATDevice"
+                }
+            },
+            "Type": "AWS::EC2::EIP"
+        },
+        "PrivateA": {
+            "Properties": {
+                "AvailabilityZone": "eu-west-1a",
+                "CidrBlock": {
+                    "Ref": "CidrPrivateA"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PrivateASubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateA"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        },
+        "PrivateB": {
+            "Properties": {
+                "AvailabilityZone": "eu-west-1b",
+                "CidrBlock": {
+                    "Ref": "CidrPrivateB"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PrivateBSubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateB"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        },
+        "PrivateC": {
+            "Properties": {
+                "AvailabilityZone": "eu-west-1c",
+                "CidrBlock": {
+                    "Ref": "CidrPrivateC"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PrivateCSubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateC"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        },
+        "PrivateRoute": {
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                }
+            },
+            "Type": "AWS::EC2::Route"
+        },
+        "PrivateRouteNAT": {
+            "Properties": {
+                "DestinationCidrBlock": "54.247.12.51/32",
+                "InstanceId": {
+                    "Ref": "NATDevice"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                }
+            },
+            "Type": "AWS::EC2::Route"
+        },
+        "PrivateRouteTable": {
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::RouteTable"
+        },
+        "PublicA": {
+            "Properties": {
+                "AvailabilityZone": "eu-west-1a",
+                "CidrBlock": {
+                    "Ref": "CidrPublicA"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PublicASubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicA"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        },
+        "PublicB": {
+            "Properties": {
+                "AvailabilityZone": "eu-west-1b",
+                "CidrBlock": {
+                    "Ref": "CidrPublicB"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PublicBSubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicB"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        },
+        "PublicC": {
+            "Properties": {
+                "AvailabilityZone": "eu-west-1c",
+                "CidrBlock": {
+                    "Ref": "CidrPublicC"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PublicCSubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicC"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        },
+        "PublicRoute": {
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                },
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                }
+            },
+            "Type": "AWS::EC2::Route"
+        },
+        "PublicRouteTable": {
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::RouteTable"
+        },
+        "VPC": {
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "CidrVPC"
+                }
+            },
+            "Type": "AWS::EC2::VPC"
+        },
+        "VPCGatewayAttachment": {
+            "Properties": {
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::VPCGatewayAttachment"
+        }
+    }
+}

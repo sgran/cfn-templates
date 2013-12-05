@@ -1,0 +1,96 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "Top level template for my sample App",
+    "Mappings" : {
+        "InstanceTypes": {
+            "CODE": {
+                "Web" : "m1.small",
+                "App" : "m1.small"
+            }
+            "PROD": {
+                "Web" : "m1.medium",
+                "App" : "m1.large"
+            }
+        },
+        "SubnetRanges": {
+            "CODE": {
+                "CidrPrivateA": "10.248.0.96/27",
+                "CidrPrivateB": "10.248.0.128/27",
+                "CidrPrivateC": "10.248.0.160/27",
+                "CidrPublicA" : "10.248.0.0/27",
+                "CidrPublicB" : "10.248.0.32/27",
+                "CidrPublicC" : "10.248.0.64/27",
+                "CidrVPC"     : "10.248.0.0/24"
+            },
+            "PROD": {
+                "CidrPrivateA": "10.248.1.96/27",
+                "CidrPrivateB": "10.248.1.128/27",
+                "CidrPrivateC": "10.248.1.160/27",
+                "CidrPublicA" : "10.248.1.0/27",
+                "CidrPublicB" : "10.248.1.32/27",
+                "CidrPublicC" : "10.248.1.64/27",
+                "CidrVPC"     : "10.248.1.0/24"
+            }
+        }
+    },
+    "Parameters" : {
+        "Stage": {
+            "Type": "String",
+            "AllowedValues" : [ "CODE", "PROD" ],
+            "Default" : "CODE"
+        }
+    },
+    "Resources" : {
+        "MySampleVPC": {
+           "Type" : "AWS::CloudFormation::Stack",
+           "Properties" : {
+              "TemplateURL" : "http://s3.amazonaws.com/mybbucket/vpc.json",
+              "Parameters" : {
+                  "CidrPrivateA": { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPrivateA" ] },
+                  "CidrPrivateB": { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPrivateB" ] },
+                  "CidrPrivateC": { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPrivateC" ] },
+                  "CidrPublicA" : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPublicA" ] },
+                  "CidrPublicB" : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPublicB" ] },
+                  "CidrPublicC" : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPublicC" ] },
+                  "CidrVPC"     : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrVPC" ] }
+              }
+           }
+        },
+        "MySampleWeb": {
+           "Type" : "AWS::CloudFormation::Stack",
+           "Properties" : {
+              "TemplateURL" : "http://s3.amazonaws.com/mybbucket/web.json",
+              "Parameters" : {
+		  "Stage"   : { "Ref": "Stage" },
+                  "CidrA"   : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPublicA" ] },
+                  "CidrB"   : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPublicB" ] },
+                  "CidrC"   : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPublicC" ] },
+                  "SubnetA" : { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPublicA" ] },
+                  "SubnetB" : { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPublicB" ] },
+                  "SubnetC" : { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPublicC" ] },
+                  "DefaultSecGroup": { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPublicC" ] },
+                  "AppPort": "80",
+                  "InstanceType": { "Fn::FindInMap" : [ "InstanceTypes", { "Ref" : "Stage" }, "Web" ] },
+                  "BackendELB": { "Fn::GetAtt" : [ "MySampleApp", "Outputs.LoadBalancerDNSName" ] },
+		  "BackendPort": "8080"
+            }
+        },
+        "MySampleApp": {
+           "Type" : "AWS::CloudFormation::Stack",
+           "Properties" : {
+              "TemplateURL" : "http://s3.amazonaws.com/mybbucket/app.json",
+              "Parameters" : {
+		  "Stage"   : { "Ref": "Stage" },
+                  "CidrA"   : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPrivateA" ] },
+                  "CidrB"   : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPrivateB" ] },
+                  "CidrC"   : { "Fn::FindInMap" : [ "SubnetRanges", { "Ref" : "Stage" }, "CidrPrivateC" ] },
+                  "SubnetA" : { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPrivateA" ] },
+                  "SubnetB" : { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPrivateB" ] },
+                  "SubnetC" : { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPrivateC" ] },
+                  "DefaultSecGroup": { "Fn::GetAtt" : [ "MySampleVPC", "Outputs.CidrPublicC" ] },
+                  "AppPort": "8080",
+              }
+           }
+        }
+    }
+}
